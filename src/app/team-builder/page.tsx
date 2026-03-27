@@ -42,6 +42,7 @@ import {
   serializeTeam,
   type SavedTeam, type SavedTeamSlot,
 } from "@/lib/storage";
+import { deflateRaw, inflateRaw } from "pako";
 
 const EMPTY_STAT_POINTS: StatPoints = { hp: 0, attack: 0, defense: 0, spAtk: 0, spDef: 0, speed: 0 };
 const MAX_TOTAL_POINTS = 64;
@@ -112,7 +113,7 @@ export default function TeamBuilderPage() {
     setShuffledTeams(shuffled);
   }, []);
 
-  // Build shareable URL from current team
+  // Build shareable URL from current team (compressed)
   const buildShareUrl = useCallback(() => {
     const filled = slots.filter(s => s.pokemon);
     if (filled.length === 0) return "";
@@ -129,8 +130,11 @@ export default function TeamBuilderPage() {
         mg: s.isMega,
       })),
     };
-    const encoded = btoa(JSON.stringify(data));
-    return `${window.location.origin}/team-builder?team=${encoded}`;
+    // Compress JSON with deflate then URL-safe base64
+    const compressed = deflateRaw(JSON.stringify(data));
+    const b64 = btoa(String.fromCharCode(...compressed))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return `${window.location.origin}/team-builder?t=${b64}`;
   }, [slots, teamName]);
 
   // Load saved teams on mount + restore last team if available OR load from share URL
@@ -139,10 +143,21 @@ export default function TeamBuilderPage() {
 
     // Check for shared team URL first
     const params = new URLSearchParams(window.location.search);
-    const teamParam = params.get("team");
+    const teamParam = params.get("t") || params.get("team"); // "t" = compressed, "team" = legacy
     if (teamParam) {
       try {
-        const data = JSON.parse(atob(teamParam));
+        let data;
+        if (params.has("t")) {
+          // Compressed: URL-safe base64 → deflateRaw → JSON
+          const b64 = teamParam.replace(/-/g, "+").replace(/_/g, "/");
+          const binary = atob(b64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          data = JSON.parse(new TextDecoder().decode(inflateRaw(bytes)));
+        } else {
+          // Legacy uncompressed
+          data = JSON.parse(atob(teamParam));
+        }
         if (data.s && Array.isArray(data.s)) {
           const restored: SavedTeamSlot[] = data.s.map((s: { p: number; a?: string; t?: string; m: string[]; sp: number[]; te?: string; i?: string; mg?: boolean }) => ({
             pokemonId: s.p,
