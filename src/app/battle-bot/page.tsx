@@ -31,6 +31,17 @@ import {
   getSavedTeams, deserializeTeam, saveSimResult, getSavedSimResults,
   type SavedTeam,
 } from "@/lib/storage";
+import { USAGE_DATA } from "@/lib/usage-data";
+
+// ── Build best available set for a pokemon ──────────────────────────────
+
+function bestAvailableSet(p: ChampionsPokemon): CommonSet {
+  // Use USAGE_DATA competitive set if available
+  const usageSet = USAGE_DATA[p.id];
+  if (usageSet && usageSet.length > 0) return usageSet[0];
+  // Fallback to generated defaults
+  return defaultSet(p);
+}
 
 // ── Build default set for a pokemon ─────────────────────────────────────
 
@@ -337,6 +348,7 @@ function runFullSimulation(
 
 export default function BattleBotPage() {
   const [selectedPokemon, setSelectedPokemon] = useState<ChampionsPokemon[]>([]);
+  const [selectedSets, setSelectedSets] = useState<CommonSet[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [result, setResult] = useState<FullSimResult | null>(null);
   const [iterations, setIterations] = useState(100);
@@ -377,17 +389,39 @@ export default function BattleBotPage() {
   const addPokemon = (pokemon: ChampionsPokemon) => {
     if (selectedPokemon.length < 6 && !selectedPokemon.find((p) => p.id === pokemon.id)) {
       setSelectedPokemon([...selectedPokemon, pokemon]);
+      setSelectedSets([...selectedSets, bestAvailableSet(pokemon)]);
     }
   };
 
   const removePokemon = (id: number) => {
-    setSelectedPokemon(selectedPokemon.filter((p) => p.id !== id));
+    const idx = selectedPokemon.findIndex(p => p.id === id);
+    if (idx >= 0) {
+      setSelectedPokemon(selectedPokemon.filter((_, i) => i !== idx));
+      setSelectedSets(selectedSets.filter((_, i) => i !== idx));
+    }
   };
 
   const loadSavedTeam = (team: SavedTeam) => {
     const slots = deserializeTeam(team.slots);
     const pokemon = slots.filter(s => s.pokemon).map(s => s.pokemon!);
+    const sets = slots.filter(s => s.pokemon).map(s => {
+      const p = s.pokemon!;
+      // Build CommonSet from TeamSlot data
+      if (s.ability && s.moves.length > 0) {
+        return {
+          name: p.name,
+          nature: s.nature ?? "Hardy",
+          ability: s.ability,
+          item: s.item ?? "Life Orb",
+          moves: s.moves.slice(0, 4),
+          sp: s.statPoints,
+          teraType: s.teraType,
+        } as CommonSet;
+      }
+      return bestAvailableSet(p);
+    });
     setSelectedPokemon(pokemon);
+    setSelectedSets(sets);
     setShowSavedTeams(false);
   };
 
@@ -396,6 +430,7 @@ export default function BattleBotPage() {
       .map(id => POKEMON_SEED.find(p => p.id === id))
       .filter(Boolean) as ChampionsPokemon[];
     setSelectedPokemon(pokemon);
+    setSelectedSets(team.sets.slice(0, pokemon.length));
     setShowSavedTeams(false);
   };
 
@@ -411,7 +446,9 @@ export default function BattleBotPage() {
 
     await new Promise(r => setTimeout(r, 50));
 
-    const sets = selectedPokemon.map(p => defaultSet(p));
+    const sets = selectedSets.length === selectedPokemon.length
+      ? selectedSets
+      : selectedPokemon.map(p => bestAvailableSet(p));
     const res = runFullSimulation(selectedPokemon, sets, iterations, opponentPool, (pct, label) => {
       setProgress(pct);
       setProgressLabel(label);

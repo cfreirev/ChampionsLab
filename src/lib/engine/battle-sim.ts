@@ -26,6 +26,7 @@ interface BattlePokemon {
   isFainted: boolean;
   hasMoved: boolean;
   canFakeOut: boolean;
+  isProtected: boolean;
   protectCount: number;
   item: string;
   itemConsumed: boolean;
@@ -70,6 +71,7 @@ function createBattlePokemon(pokemon: ChampionsPokemon, set: CommonSet): BattleP
     isFainted: false,
     hasMoved: false,
     canFakeOut: true,
+    isProtected: false,
     protectCount: 0,
     item: set.item,
     itemConsumed: false,
@@ -428,7 +430,7 @@ function executeMove(
     const successRate = Math.pow(1 / 3, user.protectCount);
     if (Math.random() < successRate) {
       user.protectCount++;
-      // Mark as protected (simplified)
+      user.isProtected = true;
       return;
     }
     user.protectCount = 0;
@@ -498,6 +500,9 @@ function executeMove(
   }
   
   for (const t of targets) {
+    // Protected targets block all damage
+    if (t.isProtected) continue;
+    
     // Accuracy check
     if (move.accuracy > 0 && Math.random() * 100 > move.accuracy) continue;
     
@@ -539,10 +544,9 @@ function executeMove(
     
     const result = calculateDamage(attacker, defender, moveName, options);
     
-    // Apply damage with random roll
-    const roll = 0.85 + Math.random() * 0.15;
-    let damage = Math.floor((result.damage[0] + result.damage[1]) / 2 * roll / (result.damage[1] || 1) * result.damage[1]);
-    damage = Math.max(1, Math.min(damage, result.damage[1]));
+    // Apply damage with random roll between min and max
+    let damage = result.damage[0] + Math.floor(Math.random() * (result.damage[1] - result.damage[0] + 1));
+    damage = Math.max(1, damage);
     
     t.currentHP -= damage;
     
@@ -643,6 +647,16 @@ function executeMove(
   if (moveName === "Fake Out") user.canFakeOut = false;
 }
 
+/** Randomly pick 4 indices from a team of up to 6 */
+function pick4(teamLen: number): number[] {
+  const indices = Array.from({ length: teamLen }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices.slice(0, Math.min(4, teamLen));
+}
+
 /** Run a single simulated battle between two teams */
 export function simulateBattle(
   team1Pokemon: ChampionsPokemon[],
@@ -650,9 +664,11 @@ export function simulateBattle(
   team2Pokemon: ChampionsPokemon[],
   team2Sets: CommonSet[]
 ): { winner: 1 | 2; turnsPlayed: number; team1Remaining: number; team2Remaining: number } {
-  // Create battle Pokémon (pick 4 from 6)
-  const bt1 = team1Pokemon.slice(0, 4).map((p, i) => createBattlePokemon(p, team1Sets[i]));
-  const bt2 = team2Pokemon.slice(0, 4).map((p, i) => createBattlePokemon(p, team2Sets[i]));
+  // Randomly pick 4 from 6 (VGC team preview)
+  const idx1 = pick4(team1Pokemon.length);
+  const idx2 = pick4(team2Pokemon.length);
+  const bt1 = idx1.map(i => createBattlePokemon(team1Pokemon[i], team1Sets[i]));
+  const bt2 = idx2.map(i => createBattlePokemon(team2Pokemon[i], team2Sets[i]));
   
   const state: BattleState = {
     team1: bt1,
@@ -664,9 +680,12 @@ export function simulateBattle(
     winner: null,
   };
   
-  // Apply entry abilities
-  for (const mon of [...state.active1, ...state.active2]) {
-    if (!mon) continue;
+  // Apply entry abilities — slower weather setter wins (triggers last, like real VGC)
+  const entryMons = [...state.active1, ...state.active2].filter(Boolean) as BattlePokemon[];
+  const weatherSetters = entryMons
+    .filter(m => { const e = getAbilityEffect(m.ability); return e?.setsWeather; })
+    .sort((a, b) => b.stats.speed - a.stats.speed); // Fastest first, slowest last (wins)
+  for (const mon of weatherSetters) {
     const abilityEffect = getAbilityEffect(mon.ability);
     if (abilityEffect?.setsWeather) {
       state.field.weather = abilityEffect.setsWeather;
@@ -793,9 +812,10 @@ export function simulateBattle(
       state.winner = 1;
     }
     
-    // Reset hasMoved
+    // Reset turn flags
     for (const mon of [...state.team1, ...state.team2]) {
       mon.hasMoved = false;
+      mon.isProtected = false;
       if (!mon.isFainted) mon.canFakeOut = false; // Only first turn
     }
   }
@@ -842,8 +862,10 @@ export function simulateBattleWithLog(
   team2Pokemon: ChampionsPokemon[],
   team2Sets: CommonSet[]
 ): DetailedBattleResult {
-  const bt1 = team1Pokemon.slice(0, 4).map((p, i) => createBattlePokemon(p, team1Sets[i]));
-  const bt2 = team2Pokemon.slice(0, 4).map((p, i) => createBattlePokemon(p, team2Sets[i]));
+  const idx1 = pick4(team1Pokemon.length);
+  const idx2 = pick4(team2Pokemon.length);
+  const bt1 = idx1.map(i => createBattlePokemon(team1Pokemon[i], team1Sets[i]));
+  const bt2 = idx2.map(i => createBattlePokemon(team2Pokemon[i], team2Sets[i]));
 
   const state: BattleState = {
     team1: bt1, team2: bt2,
@@ -856,9 +878,12 @@ export function simulateBattleWithLog(
   const log: BattleLogEntry[] = [];
   const entryEvents: string[] = [];
 
-  // Entry abilities
-  for (const mon of [...state.active1, ...state.active2]) {
-    if (!mon) continue;
+  // Entry abilities — slower weather setter wins (triggers last)
+  const logEntryMons = [...state.active1, ...state.active2].filter(Boolean) as BattlePokemon[];
+  const logWeatherSetters = logEntryMons
+    .filter(m => { const e = getAbilityEffect(m.ability); return e?.setsWeather; })
+    .sort((a, b) => b.stats.speed - a.stats.speed);
+  for (const mon of logWeatherSetters) {
     const abilityEffect = getAbilityEffect(mon.ability);
     if (abilityEffect?.setsWeather) {
       state.field.weather = abilityEffect.setsWeather;
@@ -974,7 +999,7 @@ export function simulateBattleWithLog(
     else if (team1Alive === 0) state.winner = 2;
     else if (team2Alive === 0) state.winner = 1;
 
-    for (const mon of [...state.team1, ...state.team2]) { mon.hasMoved = false; if (!mon.isFainted) mon.canFakeOut = false; }
+    for (const mon of [...state.team1, ...state.team2]) { mon.hasMoved = false; mon.isProtected = false; if (!mon.isFainted) mon.canFakeOut = false; }
   }
 
   if (!state.winner) {
