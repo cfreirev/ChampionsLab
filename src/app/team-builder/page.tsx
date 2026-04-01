@@ -251,6 +251,7 @@ export default function TeamBuilderPage() {
     if (last && last.slots.length > 0) {
       setSlots(deserializeTeam(last.slots));
       setTeamName(last.name);
+      if (last.teamId) setCurrentTeamId(last.teamId);
     }
   }, []);
 
@@ -258,9 +259,9 @@ export default function TeamBuilderPage() {
   useEffect(() => {
     const filledCount = slots.filter(s => s.pokemon).length;
     if (filledCount > 0) {
-      saveLastTeam(teamName, slots);
+      saveLastTeam(teamName, slots, currentTeamId);
     }
-  }, [slots, teamName]);
+  }, [slots, teamName, currentTeamId]);
 
   const handleSaveTeam = () => {
     trackEvent("save_team", "team_builder", teamName, filledSlots.length);
