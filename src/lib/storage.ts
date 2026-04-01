@@ -173,13 +173,13 @@ export function deleteTeam(id: string): void {
 }
 
 /** Save "last worked on" team for auto-restore */
-export function saveLastTeam(name: string, slots: TeamSlot[]): void {
-  writeJSON(KEYS.LAST_TEAM, { name, slots: serializeTeam(slots) });
+export function saveLastTeam(name: string, slots: TeamSlot[], teamId?: string): void {
+  writeJSON(KEYS.LAST_TEAM, { name, slots: serializeTeam(slots), teamId });
 }
 
 /** Get last worked on team */
-export function getLastTeam(): { name: string; slots: SavedTeamSlot[] } | null {
-  return readJSON<{ name: string; slots: SavedTeamSlot[] } | null>(KEYS.LAST_TEAM, null);
+export function getLastTeam(): { name: string; slots: SavedTeamSlot[]; teamId?: string } | null {
+  return readJSON<{ name: string; slots: SavedTeamSlot[]; teamId?: string } | null>(KEYS.LAST_TEAM, null);
 }
 
 // ── Simulation Results ──────────────────────────────────────────────────
