@@ -43,8 +43,8 @@ export function Navbar() {
                 <Image
                   src="/logo.png"
                   alt="Champions Lab"
-                  width={64}
-                  height={64}
+                  width={100}
+                  height={80}
                   className="-my-3"
                   unoptimized
                 />
