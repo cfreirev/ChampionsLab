@@ -353,19 +353,26 @@ export default function TeamBuilderPage() {
     ctx.fillText("championslab.xyz", W - 40, 80);
 
     if (logo) {
-      const logoSize = 80;
-      ctx.drawImage(logo, W - 40 - brandWidth - logoSize - 14, 10, logoSize, logoSize);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      const logoW = 120;
+      const logoH = 80;
+      ctx.drawImage(logo, W - 40 - brandWidth - logoW - 14, 10, logoW, logoH);
     }
     ctx.textAlign = "left";
 
-    // Load sprites as images
+    // Load sprites as images (use mega sprite if slot is mega)
     const spritePromises = filled.map(s => {
+      const megaForms = s.pokemon!.forms?.filter(f => f.isMega) ?? [];
+      const megaSprite = s.isMega && megaForms[s.megaFormIndex ?? 0]
+        ? megaForms[s.megaFormIndex ?? 0].sprite
+        : s.pokemon!.sprite;
       return new Promise<HTMLImageElement | null>((resolve) => {
         const img = new window.Image();
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => resolve(null);
-        img.src = s.pokemon!.sprite;
+        img.src = megaSprite;
       });
     });
     const sprites = await Promise.all(spritePromises);
@@ -395,31 +402,31 @@ export default function TeamBuilderPage() {
 
       // Name + Item
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px Inter, system-ui, sans-serif";
+      ctx.font = "bold 24px Inter, system-ui, sans-serif";
       ctx.fillText(p.name, x + 110, y + 48);
       if (s.item) {
         const nameWidth = ctx.measureText(p.name).width;
-        ctx.font = "13px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
+        ctx.font = "15px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.fillText(`@ ${s.item}`, x + 110 + nameWidth + 10, y + 48);
       }
 
       // Nature + Ability
-      ctx.font = "13px Inter, system-ui, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "15px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
       const info = [s.nature && `${s.nature} Nature`, s.ability].filter(Boolean).join(" · ");
-      ctx.fillText(info, x + 110, y + 70);
+      ctx.fillText(info, x + 110, y + 72);
 
       // Moves
-      ctx.font = "12px Inter, system-ui, sans-serif";
+      ctx.font = "14px Inter, system-ui, sans-serif";
       s.moves.forEach((m, mi) => {
-        const mx = x + 110 + (mi >= 2 ? 140 : 0);
-        const my = y + 95 + (mi % 2) * 22;
+        const mx = x + 110 + (mi >= 2 ? 150 : 0);
+        const my = y + 97 + (mi % 2) * 24;
         ctx.fillStyle = "rgba(255,255,255,0.15)";
         ctx.beginPath();
-        ctx.roundRect(mx, my - 13, 130, 20, 6);
+        ctx.roundRect(mx, my - 14, 140, 22, 6);
         ctx.fill();
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
         ctx.fillText(`• ${m}`, mx + 6, my);
       });
 
@@ -427,10 +434,10 @@ export default function TeamBuilderPage() {
       const sp = s.statPoints;
       const totalSP = Object.values(sp).reduce((a, b) => a + b, 0);
       if (totalSP > 0) {
-        ctx.font = "11px Inter, system-ui, sans-serif";
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.font = "14px Inter, system-ui, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
         const spText = STAT_KEYS.filter(k => sp[k] > 0).map(k => `${sp[k]} ${STAT_LABELS[k]}`).join(" / ");
-        ctx.fillText(spText, x + 110, y + 155);
+        ctx.fillText(spText, x + 110, y + 158);
       }
 
       // Type badges
