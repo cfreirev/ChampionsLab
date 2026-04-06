@@ -10,6 +10,7 @@ import {
   TrendingUp,
   GraduationCap,
   Heart,
+  CalendarDays,
 } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/team-builder", label: "Team Builder", icon: Users },
   { href: "/meta", label: "Meta", icon: TrendingUp },
   { href: "/battle-bot", label: "Battle Bot", icon: Swords },
+  { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/learn", label: "PokéSchool", icon: GraduationCap },
   { href: "/about", label: "About", icon: Heart },
 ];
