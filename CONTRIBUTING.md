@@ -26,17 +26,42 @@ src/lib/i18n/
 └── move-descriptions.*.json     # Move descriptions
 ```
 
-### How to Contribute a Translation
+### Adding a New Language
 
 1. **Fork** the [repository](https://github.com/Andrew21P/ChampionsLab)
 2. **Copy** the English translation file as a template:
    - `src/lib/i18n/en.json` → `src/lib/i18n/{lang}.json`
    - `src/lib/i18n/pokemon-names.fr.json` → `src/lib/i18n/pokemon-names.{lang}.json`
-   - etc. (where `{lang}` is your language code, e.g., `es`, `de`, `ja`, `it`)
+   - `src/lib/i18n/abilities.fr.json` → `src/lib/i18n/abilities.{lang}.json`
+   - `src/lib/i18n/items.fr.json` → `src/lib/i18n/items.{lang}.json`
+   - `src/lib/i18n/moves.fr.json` → `src/lib/i18n/moves.{lang}.json`
+   - `src/lib/i18n/natures.fr.json` → `src/lib/i18n/natures.{lang}.json`
+   - `src/lib/i18n/ability-descriptions.en.json` → `src/lib/i18n/ability-descriptions.{lang}.json`
+   - `src/lib/i18n/item-descriptions.en.json` → `src/lib/i18n/item-descriptions.{lang}.json`
+   - `src/lib/i18n/move-descriptions.en.json` → `src/lib/i18n/move-descriptions.{lang}.json`
+   - (where `{lang}` is your language code, e.g., `es`, `de`, `ja`, `it`)
 3. **Translate** all the keys and values to your language
 4. **Update** `src/lib/i18n/index.tsx` to add your language to the language selector
 5. **Commit** and **Push** your changes
 6. **Open a Pull Request** with your language translation
+
+### Updating an Existing Translation
+
+If you want to improve or complete an existing translation:
+
+1. **Fork** the [repository](https://github.com/Andrew21P/ChampionsLab)
+2. **Edit** the translation file you want to improve:
+   - Check `src/lib/i18n/{lang}.json` for missing keys or outdated strings
+   - Update `src/lib/i18n/pokemon-names.{lang}.json`, moves, abilities, items, etc. as needed
+   - Compare against the English version to ensure all keys are translated
+3. **Test** your changes locally to ensure text displays correctly
+4. **Commit** your changes with clear messages (e.g., "Update French translation: add missing meta keys")
+5. **Push** to your fork and **open a Pull Request**
+
+**Tips for updating:**
+- Look for `❌` markers in comments or check if recent English updates haven't been translated yet
+- Test on the actual website if possible to catch text overflow issues
+- If you're making a partial update, mention what you've improved in the PR description
 
 ### Translation Guidelines
 
