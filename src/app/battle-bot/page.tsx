@@ -1974,7 +1974,7 @@ export default function BattleBotPage() {
                         <p className="text-[8px] text-muted-foreground uppercase mb-1">{t('battleBot.presets')}</p>
                         <div className="flex flex-wrap gap-1">
                           {Object.entries(STAT_PRESETS).map(([name, sp]) => (
-                            <button key={name} onClick={() => updateSetField(editingSlotIndex, { sp: { ...sp } })} className="px-1.5 py-0.5 text-[8px] rounded bg-gray-50 dark:bg-gray-200/5 border border-gray-200 dark:border-gray-200/10 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:border-violet-200 dark:hover:border-violet-500/20 transition-colors">{name}</button>
+                            <button key={name} onClick={() => updateSetField(editingSlotIndex, { sp: { ...sp } })} className="px-1.5 py-0.5 text-[8px] rounded bg-gray-50 dark:bg-gray-200/5 border border-gray-200 dark:border-gray-200/10 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:border-violet-200 dark:hover:border-violet-500/20 transition-colors">{t(`common.statPresets.${name}`)}</button>
                           ))}
                         </div>
                       </div>

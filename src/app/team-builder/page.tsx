@@ -2021,7 +2021,7 @@ export default function TeamBuilderPage() {
                         <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t('teamBuilder.presets')}</p>
                         <div className="flex flex-wrap gap-1">
                           {Object.entries(STAT_PRESETS).map(([name, sp]) => (
-                            <button key={name} onClick={() => updateSlot(selectedSlotIndex, { statPoints: { ...sp } })} className="px-2 py-0.5 text-[9px] rounded bg-gray-50 border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200 transition-colors">{name}</button>
+                            <button key={name} onClick={() => updateSlot(selectedSlotIndex, { statPoints: { ...sp } })} className="px-2 py-0.5 text-[9px] rounded bg-gray-50 border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200 transition-colors">{t(`common.statPresets.${name}`)}</button>
                           ))}
                           {slotSuggestion && <button onClick={() => updateSlot(selectedSlotIndex, { statPoints: { ...slotSuggestion.suggestedSP.sp } })} className="px-2 py-0.5 text-[9px] rounded bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors font-medium">{t('teamBuilder.suggestedPreset')}</button>}
                         </div>

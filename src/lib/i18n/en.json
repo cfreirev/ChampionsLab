@@ -139,6 +139,14 @@
       "grassy": "Grassy",
       "misty": "Misty",
       "psychic": "Psychic"
+    },
+    "statPresets": {
+      "Balanced Attacker": "Balanced Attacker",
+      "Bulky Support": "Bulky Support",
+      "Fast Sweeper": "Fast Sweeper",
+      "Special Sweeper": "Special Sweeper",
+      "Trick Room Tank": "Trick Room Tank",
+      "Mixed Attacker": "Mixed Attacker"
     }
   },
   "pokedex": {

@@ -139,6 +139,14 @@
       "grassy": "Herbu",
       "misty": "Brumeux",
       "psychic": "Psychique"
+    },
+    "statPresets": {
+      "Balanced Attacker": "Attaquant équilibré",
+      "Bulky Support": "Support défensif",
+      "Fast Sweeper": "Sweeper rapide",
+      "Special Sweeper": "Sweeper spécial",
+      "Trick Room Tank": "Tank sous Distorsion",
+      "Mixed Attacker": "Attaquant mixte"
     }
   },
   "pokedex": {
