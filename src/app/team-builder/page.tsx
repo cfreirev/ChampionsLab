@@ -8,7 +8,7 @@ import {
   Plus, X, Download, Upload, Copy, Trash2, Shield, Zap,
   ChevronDown, ChevronUp, Check, AlertTriangle, Sparkles, Star,
   Users, Brain, Target, Award, Minus, Settings2,
-  Save, FolderOpen, Share2, SlidersHorizontal,
+  Save, FolderOpen, Share2, SlidersHorizontal, ExternalLink,
 } from "lucide-react";
 import { POKEMON_SEED, STAT_PRESETS } from "@/lib/pokemon-data";
 import {
@@ -226,6 +226,11 @@ export default function TeamBuilderPage() {
   const [shareLinkError, setShareLinkError] = useState<string | null>(null);
   const [showMoreTournament, setShowMoreTournament] = useState(false);
   const [showMoreCurated, setShowMoreCurated] = useState(false);
+  const [pasteHideNature, setPasteHideNature] = useState(false);
+  const [pasteHideStatPoints, setPasteHideStatPoints] = useState(false);
+  const [pasteHideItem, setPasteHideItem] = useState(false);
+  const [pasteHideAbility, setPasteHideAbility] = useState(false);
+  const [pasteLinkCopied, setPasteLinkCopied] = useState(false);
 
   // Tournament teams filtered to active roster, sorted by placement
   const tournamentTeams = useMemo(() => {
@@ -435,10 +440,18 @@ export default function TeamBuilderPage() {
     for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
     for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-    // Header LEFT - Team name + subtitle
+    // Header LEFT - Team name + subtitle (ellipsize if too long)
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 38px Inter, system-ui, sans-serif";
-    ctx.fillText(teamName, 40, 55);
+    const maxTitleWidth = W - 660; // leave room for QR + logo + brand on right
+    let titleText = teamName;
+    if (ctx.measureText(titleText).width > maxTitleWidth) {
+      while (titleText.length > 1 && ctx.measureText(titleText + "…").width > maxTitleWidth) {
+        titleText = titleText.slice(0, -1);
+      }
+      titleText = titleText.trimEnd() + "…";
+    }
+    ctx.fillText(titleText, 40, 55);
 
     ctx.font = "15px Inter, system-ui, sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.55)";
@@ -526,6 +539,9 @@ export default function TeamBuilderPage() {
     ctx.textAlign = "left";
 
     // Load sprites as images (use mega sprite if slot is mega)
+    // Strip CDN prefix so sprites load from same origin (avoids CORS issues with canvas)
+    const cdnPrefix = process.env.NEXT_PUBLIC_SPRITE_CDN || "";
+    const toLocalUrl = (url: string) => cdnPrefix && url.startsWith(cdnPrefix) ? url.slice(cdnPrefix.length) : url;
     const spritePromises = filled.map(s => {
       const megaForms = s.pokemon!.forms?.filter(f => f.isMega && !f.hidden) ?? [];
       const megaSprite = s.isMega && megaForms[s.megaFormIndex ?? 0]
@@ -536,7 +552,7 @@ export default function TeamBuilderPage() {
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => resolve(null);
-        img.src = megaSprite;
+        img.src = toLocalUrl(megaSprite);
       });
     });
     const sprites = await Promise.all(spritePromises);
@@ -668,6 +684,8 @@ export default function TeamBuilderPage() {
 
   const [shareUrl, setShareUrl] = useState("");
   const [urlCopied, setUrlCopied] = useState(false);
+  const [pasteUrl, setPasteUrl] = useState("");
+  const [pasteGenerating, setPasteGenerating] = useState(false);
 
   const copyShareUrl = async () => {
     trackEvent("copy_share_url", "team_builder", teamName);
@@ -675,6 +693,56 @@ export default function TeamBuilderPage() {
     await navigator.clipboard.writeText(shareUrl);
     setUrlCopied(true);
     setTimeout(() => setUrlCopied(false), 2000);
+  };
+
+  // Build a secure paste URL: creates a NEW share entry with hidden fields stripped
+  const buildPasteUrl = async () => {
+    const filled = slots.filter(s => s.pokemon);
+    if (filled.length === 0) return "";
+    const data = {
+      n: teamName,
+      s: serializeTeam(slots).map(s => ({
+        p: s.pokemonId,
+        a: pasteHideAbility ? undefined : s.ability,
+        t: pasteHideNature ? undefined : s.nature,
+        m: s.moves,
+        sp: pasteHideStatPoints ? [0, 0, 0, 0, 0, 0] : [s.statPoints.hp, s.statPoints.attack, s.statPoints.defense, s.statPoints.spAtk, s.statPoints.spDef, s.statPoints.speed],
+        i: pasteHideItem ? undefined : s.item,
+        mg: s.isMega,
+        pa: s.preMegaAbility,
+      })),
+    };
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        return `${window.location.origin}/paste?s=${id}`;
+      }
+    } catch { /* fall through to compressed fallback */ }
+    // Fallback: compressed URL
+    const compressed = deflateRaw(JSON.stringify(data));
+    const b64 = btoa(String.fromCharCode(...compressed))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return `${window.location.origin}/paste?t=${b64}`;
+  };
+
+  // Regenerate paste URL when hide options change
+  useEffect(() => {
+    if (!shareUrl) { setPasteUrl(""); return; }
+    setPasteGenerating(true);
+    buildPasteUrl().then(url => { setPasteUrl(url); setPasteGenerating(false); });
+  }, [pasteHideNature, pasteHideStatPoints, pasteHideItem, pasteHideAbility, shareUrl]);
+
+  const copyPasteUrl = async () => {
+    trackEvent("copy_paste_url", "team_builder", teamName);
+    if (!pasteUrl) return;
+    await navigator.clipboard.writeText(pasteUrl);
+    setPasteLinkCopied(true);
+    setTimeout(() => setPasteLinkCopied(false), 2000);
   };
 
   const filledSlots = slots.filter((s) => s.pokemon !== null);
@@ -1555,9 +1623,9 @@ export default function TeamBuilderPage() {
                       </p>
                       <div className="grid grid-cols-3 gap-1">
                         {uncovered.map(type => (
-                          <div key={type} className="flex items-center gap-1 px-1.5 py-1 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[type] }} />
-                            <span className="text-[9px] font-semibold uppercase text-gray-500 dark:text-gray-300 truncate">{tFullType(type)}</span>
+                          <div key={type} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.06]">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[type] }} />
+                            <span className="text-[9px] font-semibold uppercase text-gray-600 dark:text-white truncate">{tFullType(type)}</span>
                           </div>
                         ))}
                       </div>
@@ -2090,18 +2158,18 @@ export default function TeamBuilderPage() {
                             {allTypes.map((type) => {
                               const mult = getMatchup(type as PokemonType, activeTypes);
                               let label = "";
-                              let bg = "bg-gray-50 dark:bg-gray-200/5";
+                              let bg = "bg-gray-50 dark:bg-white/[0.03]";
                               let textColor = "text-gray-300 dark:text-gray-600";
-                              if (mult === 0) { label = "0"; bg = "bg-gray-900 dark:bg-gray-900"; textColor = "text-gray-400"; }
-                              else if (mult === 0.25) { label = "\u00bc"; bg = "bg-emerald-100 dark:bg-emerald-500/20"; textColor = "text-emerald-700 dark:text-emerald-400"; }
-                              else if (mult === 0.5) { label = "\u00bd"; bg = "bg-emerald-50 dark:bg-emerald-500/10"; textColor = "text-emerald-600 dark:text-emerald-400"; }
+                              if (mult === 0) { label = "0"; bg = "bg-black/60 dark:bg-black/40"; textColor = "text-gray-500 dark:text-gray-500"; }
+                              else if (mult === 0.25) { label = "\u00bc"; bg = "bg-emerald-100 dark:bg-emerald-500/20"; textColor = "text-emerald-700 dark:text-emerald-300"; }
+                              else if (mult === 0.5) { label = "\u00bd"; bg = "bg-emerald-50 dark:bg-emerald-500/15"; textColor = "text-emerald-600 dark:text-emerald-300"; }
                               else if (mult === 1) { label = ""; }
-                              else if (mult === 2) { label = "2\u00d7"; bg = "bg-red-50 dark:bg-red-500/10"; textColor = "text-red-600 dark:text-red-400"; }
-                              else if (mult === 4) { label = "4\u00d7"; bg = "bg-red-100 dark:bg-red-500/20"; textColor = "text-red-700 dark:text-red-300"; }
+                              else if (mult === 2) { label = "2\u00d7"; bg = "bg-red-50 dark:bg-red-500/15"; textColor = "text-red-600 dark:text-red-400"; }
+                              else if (mult === 4) { label = "4\u00d7"; bg = "bg-red-100 dark:bg-red-500/25"; textColor = "text-red-700 dark:text-red-300"; }
                               return (
                                 <div key={type} className={cn("flex flex-col items-center gap-0.5 py-1 rounded-md", bg)}>
                                   <span className="w-full text-center text-[7px] font-bold uppercase text-white/90 rounded px-0.5 py-px leading-none" style={{ backgroundColor: TYPE_COLORS[type as PokemonType] }}>{tt(type)}</span>
-                                  <span className={cn("text-[10px] font-bold leading-none", textColor)}>{label}</span>
+                                  <span className={cn("text-[10px] font-bold leading-none min-h-[14px]", textColor)}>{label}</span>
                                 </div>
                               );
                             })}
@@ -2126,11 +2194,11 @@ export default function TeamBuilderPage() {
                               else if (best >= 2) { label = "2\u00d7"; bg = "bg-emerald-50 dark:bg-emerald-500/10"; textColor = "text-emerald-600 dark:text-emerald-400"; }
                               else if (best === 1) { label = "1\u00d7"; textColor = "text-gray-400 dark:text-gray-500"; }
                               else if (best > 0 && best < 1) { label = "\u00bd"; bg = "bg-red-50 dark:bg-red-500/10"; textColor = "text-red-500 dark:text-red-400"; }
-                              else { label = "0"; bg = "bg-gray-900 dark:bg-gray-900"; textColor = "text-gray-400"; }
+                              else { label = "0"; bg = "bg-black/60 dark:bg-black/40"; textColor = "text-gray-500 dark:text-gray-500"; }
                               return (
                                 <div key={type} className={cn("flex flex-col items-center gap-0.5 py-1 rounded-md", bg)}>
                                   <span className="w-full text-center text-[7px] font-bold uppercase text-white/90 rounded px-0.5 py-px leading-none" style={{ backgroundColor: TYPE_COLORS[type as PokemonType] }}>{tt(type)}</span>
-                                  <span className={cn("text-[10px] font-bold leading-none", textColor)}>{label}</span>
+                                  <span className={cn("text-[10px] font-bold leading-none min-h-[14px]", textColor)}>{label}</span>
                                 </div>
                               );
                             })}
@@ -2388,6 +2456,51 @@ export default function TeamBuilderPage() {
                   {urlCopied ? t('teamBuilder.linkCopied') : t('teamBuilder.copyLink')}
                 </button>
               </div>
+
+              {/* Pokepaste Section */}
+              {shareUrl && (
+                <div className="mt-4 pt-4 border-t border-gray-200/60 dark:border-white/10">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4 text-indigo-500" />
+                    {t('teamBuilder.pokepaste')}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mb-3">{t('teamBuilder.pokepasteDesc')}</p>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      <input type="checkbox" checked={pasteHideNature} onChange={e => setPasteHideNature(e.target.checked)} className="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 w-3.5 h-3.5" />
+                      {t('teamBuilder.hideNature')}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      <input type="checkbox" checked={pasteHideStatPoints} onChange={e => setPasteHideStatPoints(e.target.checked)} className="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 w-3.5 h-3.5" />
+                      {t('teamBuilder.hideStatPoints')}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      <input type="checkbox" checked={pasteHideItem} onChange={e => setPasteHideItem(e.target.checked)} className="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 w-3.5 h-3.5" />
+                      {t('teamBuilder.hideItem')}
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      <input type="checkbox" checked={pasteHideAbility} onChange={e => setPasteHideAbility(e.target.checked)} className="rounded border-gray-300 text-indigo-500 focus:ring-indigo-500 w-3.5 h-3.5" />
+                      {t('teamBuilder.hideAbility')}
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={pasteGenerating ? "..." : pasteUrl}
+                      className="flex-1 px-3 py-2 text-xs rounded-lg bg-gray-100 border border-gray-200 text-gray-600 truncate"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={copyPasteUrl}
+                      className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 shrink-0", pasteLinkCopied ? "bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-400" : "bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/25")}
+                    >
+                      {pasteLinkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {pasteLinkCopied ? t('common.copied') : t('teamBuilder.copyPasteLink')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </>
         )}
@@ -2446,14 +2559,14 @@ export default function TeamBuilderPage() {
                 </div>
 
                 {/* Base Stats section */}
-                <div className="mt-3 rounded-xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden bg-white/40 dark:bg-white/5">
+                <div className="mt-3 rounded-xl border border-gray-200/60 dark:border-white/[0.06] overflow-hidden bg-white/40 dark:bg-white/[0.03]">
                   <button
                     onClick={() => setShowStatFilters(!showStatFilters)}
                     className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">{t('teamBuilder.baseStatFilter')}</span>
+                      <span className="text-[11px] font-semibold text-gray-700 dark:text-white">{t('teamBuilder.baseStatFilter')}</span>
                       {Object.values(pickerStatFilters).some(v => v > 0) && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                           {Object.values(pickerStatFilters).filter(v => v > 0).length} {t('teamBuilder.activeFilters')}
@@ -2497,12 +2610,12 @@ export default function TeamBuilderPage() {
                               step={key === "bst" ? 10 : 5}
                               value={pickerStatFilters[key]}
                               onChange={(e) => setPickerStatFilters(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                              className="flex-1 h-1.5 cursor-pointer"
-                              style={{ accentColor: color }}
+                              className="stat-range flex-1 h-1.5 cursor-pointer appearance-none bg-transparent"
+                              style={{ accentColor: color, "--stat-color": color } as React.CSSProperties}
                             />
                             <span className={cn(
                               "text-[10px] font-mono w-8 tabular-nums shrink-0 text-right transition-colors",
-                              pickerStatFilters[key] > 0 ? "font-bold" : "text-gray-400 dark:text-gray-500"
+                              pickerStatFilters[key] > 0 ? "font-bold" : "text-gray-400 dark:text-gray-400"
                             )} style={pickerStatFilters[key] > 0 ? { color } : undefined}>
                               {pickerStatFilters[key] > 0 ? `≥${pickerStatFilters[key]}` : " - "}
                             </span>

@@ -104,14 +104,14 @@ const STAT_COLORS = ["#ef4444", "#f97316", "#eab308", "#3b82f6", "#22c55e", "#e8
 const MAX_STAT = 255;
 
 const PILL_STYLES = [
-  { color: "text-orange-600", bg: "bg-orange-50", ring: "ring-orange-200" },
-  { color: "text-sky-600", bg: "bg-sky-50", ring: "ring-sky-200" },
-  { color: "text-red-600", bg: "bg-red-50", ring: "ring-red-200" },
-  { color: "text-violet-600", bg: "bg-violet-50", ring: "ring-violet-200" },
-  { color: "text-pink-600", bg: "bg-pink-50", ring: "ring-pink-200" },
-  { color: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
-  { color: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
-  { color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
+  { color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10", ring: "ring-orange-200 dark:ring-orange-400/30" },
+  { color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10", ring: "ring-sky-200 dark:ring-sky-400/30" },
+  { color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-500/10", ring: "ring-red-200 dark:ring-red-400/30" },
+  { color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", ring: "ring-violet-200 dark:ring-violet-400/30" },
+  { color: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-500/10", ring: "ring-pink-200 dark:ring-pink-400/30" },
+  { color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", ring: "ring-emerald-200 dark:ring-emerald-400/30" },
+  { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", ring: "ring-amber-200 dark:ring-amber-400/30" },
+  { color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10", ring: "ring-teal-200 dark:ring-teal-400/30" },
 ];
 
 const PILL_ICONS = [Target, Shield, Zap, Star, Timer, Gauge, Sword, TrendingUp];
@@ -163,14 +163,14 @@ function PresetPill({ set, index }: { set: CommonSet; index: number }) {
               <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", style.bg)}>
                 <Icon className={cn("w-3.5 h-3.5", style.color)} />
               </div>
-              <span className="text-sm font-bold text-gray-900">{set.name}</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{set.name}</span>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed mb-3">{tn(set.nature)} · {ta(set.ability)} · {ti(set.item)}</p>
             <div className="grid grid-cols-3 gap-1.5">
               {STAT_KEYS.map((key, i) => (
                 <div key={key} className="flex items-center justify-between px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-200/5">
                   <span className="text-[10px] text-gray-400">{ts(key)}</span>
-                  <span className={cn("text-[10px] font-bold", set.sp[key] > 0 ? "text-gray-800" : "text-gray-300 dark:text-gray-600")}>
+                  <span className={cn("text-[10px] font-bold", set.sp[key] > 0 ? "text-gray-800 dark:text-gray-200" : "text-gray-300 dark:text-gray-600")}>
                     {set.sp[key]}
                   </span>
                 </div>
@@ -482,15 +482,15 @@ export function PokemonDetailModal({ pokemon, onClose }: PokemonDetailModalProps
                           if (abilityTypeAdjustments.immunities.has(type)) mult = 0;
                           else if (abilityTypeAdjustments.halved.has(type)) mult *= 0.5;
                           let label = "";
-                          let bg = "bg-gray-50 dark:bg-gray-200/5";
+                          let bg = "bg-gray-50 dark:bg-white/[0.03]";
                           let textColor = "text-gray-300 dark:text-gray-600";
-                          if (mult === 0) { label = "0"; bg = "bg-gray-900 dark:bg-gray-900"; textColor = "text-gray-400"; }
-                          else if (mult <= 0.125) { label = "⅛"; bg = "bg-emerald-200 dark:bg-emerald-500/30"; textColor = "text-emerald-800 dark:text-emerald-300"; }
-                          else if (mult === 0.25) { label = "¼"; bg = "bg-emerald-100 dark:bg-emerald-500/20"; textColor = "text-emerald-700 dark:text-emerald-400"; }
-                          else if (mult === 0.5) { label = "½"; bg = "bg-emerald-50 dark:bg-emerald-500/10"; textColor = "text-emerald-600 dark:text-emerald-400"; }
+                          if (mult === 0) { label = "0"; bg = "bg-black/60 dark:bg-black/40"; textColor = "text-gray-500 dark:text-gray-500"; }
+                          else if (mult <= 0.125) { label = "⅛"; bg = "bg-emerald-200 dark:bg-emerald-500/25"; textColor = "text-emerald-800 dark:text-emerald-300"; }
+                          else if (mult === 0.25) { label = "¼"; bg = "bg-emerald-100 dark:bg-emerald-500/20"; textColor = "text-emerald-700 dark:text-emerald-300"; }
+                          else if (mult === 0.5) { label = "½"; bg = "bg-emerald-50 dark:bg-emerald-500/15"; textColor = "text-emerald-600 dark:text-emerald-300"; }
                           else if (mult === 1) { label = ""; }
-                          else if (mult === 2) { label = "2×"; bg = "bg-red-50 dark:bg-red-500/10"; textColor = "text-red-600 dark:text-red-400"; }
-                          else if (mult === 4) { label = "4×"; bg = "bg-red-100 dark:bg-red-500/20"; textColor = "text-red-700 dark:text-red-300"; }
+                          else if (mult === 2) { label = "2×"; bg = "bg-red-50 dark:bg-red-500/15"; textColor = "text-red-600 dark:text-red-400"; }
+                          else if (mult === 4) { label = "4×"; bg = "bg-red-100 dark:bg-red-500/25"; textColor = "text-red-700 dark:text-red-300"; }
                           return (
                             <div key={type} className={cn("flex flex-col items-center gap-0.5 py-1.5 rounded-lg", bg)}>
                               <span
@@ -499,7 +499,7 @@ export function PokemonDetailModal({ pokemon, onClose }: PokemonDetailModalProps
                               >
                                 {tt(type)}
                               </span>
-                              <span className={cn("text-[11px] font-bold", textColor)}>{label}</span>
+                              <span className={cn("text-[11px] font-bold min-h-[16px]", textColor)}>{label}</span>
                             </div>
                           );
                         })}
@@ -516,7 +516,7 @@ export function PokemonDetailModal({ pokemon, onClose }: PokemonDetailModalProps
                       </div>
                       <p className="text-[13px] text-gray-600 dark:text-gray-400 leading-relaxed mb-3"
                         dangerouslySetInnerHTML={{ __html: t('pokemonDetail.statPointsDesc')
-                          .replace(/<b>/g, '<span class="font-bold text-gray-800">')
+                          .replace(/<b>/g, '<span class="font-bold text-gray-800 dark:text-gray-200">')
                           .replace(/<\/b>/g, '</span>')
                           .replace(/<sp>/g, '<span class="font-bold text-violet-700 dark:text-violet-400">')
                           .replace(/<\/sp>/g, '</span>')

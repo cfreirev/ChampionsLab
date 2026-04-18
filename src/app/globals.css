@@ -260,6 +260,45 @@ body.mobile-open .mobile-nav-panel { display: block; }
 .sp-slider::-moz-range-thumb { border-color: var(--sp-thumb-border, #8b5cf6); }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Stat filter range inputs – dark mode track */
+.dark .stat-range::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  height: 6px;
+}
+.dark .stat-range::-moz-range-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  height: 6px;
+}
+.stat-range::-webkit-slider-runnable-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  height: 6px;
+}
+.stat-range::-moz-range-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  height: 6px;
+}
+.stat-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--stat-color, #888);
+  margin-top: -4px;
+  cursor: pointer;
+}
+.stat-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--stat-color, #888);
+  border: none;
+  cursor: pointer;
+}
+
 
 /* =====================================================
    DARK MODE - Deep Blue Theme

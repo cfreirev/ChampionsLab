@@ -12,6 +12,15 @@ interface ChangelogEntry {
 
 const SHARED_ENTRIES: ChangelogEntry[] = [
   {
+    date: "18/04/2026",
+    items: [
+      "📋 PokéPaste  —  new /paste page to share teams as a read-only view with gradient title header, copy-as-text export, and Open in Team Builder link that actually loads the team",
+      "🔒 Secure PokéPaste sharing  —  hide Nature / Stat Points / Item / Ability checkboxes now strip data server-side (new share entry) instead of URL params that could be removed",
+      "🖼️ Share image fixes  —  sprites now load correctly after CDN migration (same-origin fallback for canvas), long team names are ellipsized so they don't overlap the QR code",
+      "🌙 Dark mode: About page X button, share modal URL inputs, paste URL input",
+    ],
+  },
+  {
     date: "17/04/2026",
     items: [
       "🚀 Sprite CDN  -  all Pokémon sprites now served from Hetzner Object Storage with 1-year immutable cache headers for faster load times",

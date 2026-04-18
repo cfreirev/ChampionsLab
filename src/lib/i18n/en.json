@@ -368,6 +368,13 @@
     "linkCopied": "Link Copied!",
     "downloadImage": "Download Image",
     "scanToImport": "SCAN TO IMPORT",
+    "pokepaste": "Pokepaste",
+    "pokepasteDesc": "Share a read-only view of your team. Perfect for tournaments — toggle the checkboxes below to hide sensitive info.",
+    "hideNature": "Hide Nature",
+    "hideStatPoints": "Hide Stat Points",
+    "hideItem": "Hide Item",
+    "hideAbility": "Hide Ability",
+    "copyPasteLink": "Copy Paste Link",
     "nature": "Nature",
     "selectNature": "Select nature…",
     "neutral": "Neutral",
@@ -1246,5 +1253,14 @@
     "ruleNoDupeItemsDesc": "Each held item can only be used once per team. Known as the Item Clause - forces diverse item choices and prevents stacking powerful items like Leftovers or Choice Scarf.",
     "ruleTimer": "20-min timer",
     "ruleTimerDesc": "Each game has a 20-minute time limit. If time runs out, the player with more remaining Pokémon wins. Prevents stalling and keeps games fast-paced."
+  },
+  "paste": {
+    "noTeam": "No team data found. Use the Share button in the Team Builder to generate a paste link.",
+    "pageDesc": "A shared team from Champions Lab — the ultimate competitive Pokémon companion.",
+    "backToBuilder": "Back to Team Builder",
+    "subtitle": "{count} Pokémon",
+    "copyPaste": "Copy Paste",
+    "footer": "Built with Champions Lab",
+    "openInBuilder": "Open in Team Builder"
   }
 }
